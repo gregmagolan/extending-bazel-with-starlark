@@ -25,3 +25,7 @@ def config(ctx: ConfigContext):
 
     ctx.traits[BazelTrait].build_event.append(_watch)
     ctx.hooks.post_task(_report)
+
+    # `aspect delivery` publishes nothing unless told what. Every `oci_push` in
+    # this repo was generated from a `service.yaml`, so this means "all of them".
+    ctx.tasks["delivery"].args.query = 'kind("oci_push rule", //...)'

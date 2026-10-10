@@ -1,7 +1,9 @@
 # Deployment description for the cron binary.
 #
-# Nothing reads this file yet. A later step in the course adds a Gazelle
-# extension that generates the OCI image and push targets from it.
+# The Gazelle extension in `tools/gazelle/service_image.axl` reads this file and
+# generates the image and push targets from it. Only two keys are read: `name`
+# becomes the image label and the push repository, `port` becomes
+# `exposed_ports`. The rest is here to look like a real descriptor.
 name: cron
 port: 8082
 replicas: 1

@@ -15,3 +15,13 @@ bazel_dep(name = "gazelle", version = "0.54.0")
 
 go_sdk = use_extension("@rules_go//go:extensions.bzl", "go_sdk")
 go_sdk.download(version = "1.25.1")
+
+# BUILD file generation. aspect_gazelle_prebuilt fetches a precompiled Gazelle
+# that already contains Orion, the Starlark interpreter that runs the AXL
+# extension in //tools/gazelle:service_image.axl. It is the only Gazelle binary
+# that can run Starlark extensions, and it needs no Go toolchain to build.
+bazel_dep(name = "aspect_gazelle_prebuilt", version = "0.0.26")
+
+# Container image rules, used only by targets the Orion extension generates.
+bazel_dep(name = "rules_oci", version = "2.3.0")
+bazel_dep(name = "tar.bzl", version = "0.10.9")

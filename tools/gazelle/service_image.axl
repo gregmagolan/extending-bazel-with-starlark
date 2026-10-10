@@ -1,0 +1,128 @@
+"""Generate container targets from a `service.yaml`.
+
+Gazelle reads Go sources and writes `go_library` and `go_binary`. This
+extension teaches it one more convention: a package with a `service.yaml` is a
+service, and a service gets an image and a push target.
+
+Two halves. `prepare` says what to read. `declare` is handed one package's
+answers and says what targets belong there.
+"""
+
+_SERVICE_FILE = "service.yaml"
+
+# ttl.sh needs no account and expires an image after the period in its tag,
+# which makes it the only registry a course can push to.
+_REGISTRY = "ttl.sh"
+_TTL_TAG = "1h"
+_PLATFORM = "@rules_go//go/toolchain:linux_amd64"
+
+def _prepare(ctx):
+    """What to read, and what to pull out of it.
+
+    The matchers cost nothing in packages without a `service.yaml`. The queries
+    are yq expressions; each returns a list, empty when the key is absent.
+    """
+    return aspect.PrepareResult(
+        sources = [
+            aspect.SourceFiles(_SERVICE_FILE),
+            aspect.SourceExtensions(".go"),
+        ],
+        queries = {
+            "name": aspect.YamlQuery(filter = _SERVICE_FILE, query = ".name"),
+            "port": aspect.YamlQuery(filter = _SERVICE_FILE, query = ".port"),
+        },
+    )
+
+def _declare(ctx):
+    """Declare one package's targets."""
+    # `ctx.rel` is this package's path. The binary target is named after the
+    # directory — `cmd/server` builds `:server` — which is Gazelle's own
+    # convention for go_binary, not something this extension chose.
+    binary = path.base(ctx.rel)
+    cross, layer = binary + "_linux", binary + "_layer"
+
+    # `ctx.sources` carries every file the matchers in `prepare` asked for, so
+    # the .go files are in here too. Starlark has no `next()`, so finding the
+    # one `service.yaml` is a loop over all of them.
+    service = None
+    for source in ctx.sources:
+        if source.path == _SERVICE_FILE:
+            service = source
+
+    # Not a service. Retract what an earlier run generated; Gazelle ignores a
+    # removal for a target that is not there.
+    if service == None:
+        for name in [cross, layer, "image", "push"]:
+            ctx.targets.remove(name)
+        return
+
+    names = service.query_results["name"]
+    ports = service.query_results["port"]
+    service_name = names[0] if len(names) else binary
+
+    # Build the binary for the image's platform rather than the host's.
+    ctx.targets.add(
+        name = cross,
+        kind = "go_cross_binary",
+        attrs = {"target": ":" + binary, "platform": _PLATFORM},
+    )
+
+    # One layer holding it. A static binary has no runfiles worth shipping.
+    ctx.targets.add(
+        name = layer,
+        kind = "tar",
+        attrs = {"srcs": [":" + cross], "include_runfiles": False},
+    )
+
+    attrs = {
+        "tars": [":" + layer],
+        "entrypoint": ["/" + path.join(ctx.rel, cross)],
+        "os": "linux",
+        "architecture": "amd64",
+        "labels": {"org.opencontainers.image.title": service_name},
+    }
+    if len(ports):
+        attrs["exposed_ports"] = ["%s/tcp" % ports[0]]
+
+    ctx.targets.add(name = "image", kind = "oci_image", attrs = attrs)
+
+    ctx.targets.add(
+        name = "push",
+        kind = "oci_push",
+        attrs = {
+            "image": ":image",
+            "repository": "%s/%s" % (_REGISTRY, service_name),
+            "remote_tags": [_TTL_TAG],
+        },
+    )
+
+# The rules this extension writes. `From` is the bzl file to load them from.
+# `NonEmptyAttrs` names the attribute whose absence means the rule is dead, so
+# Gazelle deletes a target once its `service.yaml` is gone. `MergeableAttrs`
+# are re-asserted on every run: edit `port:` and `exposed_ports` follows.
+aspect.gazelle_rule_kind("go_cross_binary", {
+    "From": "@rules_go//go:def.bzl",
+    "NonEmptyAttrs": ["target"],
+    "MergeableAttrs": ["target", "platform"],
+})
+
+aspect.gazelle_rule_kind("tar", {
+    "From": "@tar.bzl",
+    "NonEmptyAttrs": ["srcs"],
+    "MergeableAttrs": ["srcs", "include_runfiles"],
+})
+
+aspect.gazelle_rule_kind("oci_image", {
+    "From": "@rules_oci//oci:defs.bzl",
+    "NonEmptyAttrs": ["tars"],
+    "MergeableAttrs": ["tars", "entrypoint", "os", "architecture", "exposed_ports", "labels"],
+})
+
+aspect.gazelle_rule_kind("oci_push", {
+    "From": "@rules_oci//oci:defs.bzl",
+    "NonEmptyAttrs": ["image"],
+    "MergeableAttrs": ["image", "repository", "remote_tags"],
+})
+
+# Orion is the name of the engine that runs Gazelle extensions written this way.
+aspect.orion_extension(id = "service_image", prepare = _prepare, declare = _declare)
