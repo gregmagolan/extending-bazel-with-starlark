@@ -1,0 +1,32 @@
+diff --git a/lib/validate/BUILD.bazel b/lib/validate/BUILD.bazel
+index 4a6c579..16fe67a 100644
+--- a/lib/validate/BUILD.bazel
++++ b/lib/validate/BUILD.bazel
+@@ -7,6 +7,7 @@ go_library(
+     visibility = ["//visibility:public"],
+     deps = [
+         "//lib/codec",
++        "//lib/log",
+         "//lib/schema",
+     ],
+ )
+diff --git a/lib/validate/validate.go b/lib/validate/validate.go
+index b9e1d39..716a131 100644
+--- a/lib/validate/validate.go
++++ b/lib/validate/validate.go
+@@ -11,6 +11,7 @@ import (
+ 	"time"
+ 
+ 	"github.com/gregmagolan/extending-bazel-with-starlark/lib/codec"
++	"github.com/gregmagolan/extending-bazel-with-starlark/lib/log"
+ 	"github.com/gregmagolan/extending-bazel-with-starlark/lib/schema"
+ )
+ 
+@@ -103,6 +104,7 @@ func checkKind(res *Result, field schema.Field, raw string) {
+ // have a schema handy.
+ func NonEmpty(field, value string) error {
+ 	if strings.TrimSpace(value) == "" {
++		log.Default().Debug("validation failed", "field", field)
+ 		return Problem{Field: field, Detail: "must not be empty"}
+ 	}
+ 	return nil
