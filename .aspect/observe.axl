@@ -1,0 +1,56 @@
+"""Report each test Bazel ran, by reading Bazel's own event stream.
+
+Bazel publishes an event for everything it does. A task can subscribe to the
+kinds it cares about and collect them as the build runs, instead of parsing
+Bazel's terminal output afterwards.
+
+This one asks for `test_summary` events — one per test target — and prints a
+report once the build has finished, so its output never lands in the middle of
+Bazel's.
+"""
+
+def _impl(ctx: TaskContext) -> int:
+    # Subscribe before the build starts, so no early events are missed.
+    events = bazel.build_events.iterator(kinds = ["test_summary"])
+
+    # `--nocache_test_results` so there is always something to watch: a cached
+    # test publishes a result without running. Flags for Bazel go here; the
+    # task's own arguments are declared below.
+    build = ctx.bazel.test(
+        build_events = [events],
+        flags = ["--nocache_test_results"],
+        *ctx.args.targets
+    )
+
+    # Each turn waits for the next event; the loop ends when Bazel is done.
+    # Collect here and print later: Bazel owns the terminal until it exits.
+    results = []
+    for event in events:
+        results.append(struct(
+            label = event.id.label,
+            status = event.payload.overall_status,  # "passed", "flaky", "failed"
+        ))
+
+    code = build.wait().code
+
+    counts = {}
+    for r in sorted(results, key = lambda r: r.label):
+        counts[r.status] = counts.get(r.status, 0) + 1
+        print("  " + r.status + "  " + r.label)
+
+    print("")
+    for status in sorted(counts):
+        print("  " + status + "  " + str(counts[status]))
+    return code
+
+observe = task(
+    implementation = _impl,
+    summary = "Report each test Bazel ran.",
+    args = {
+        "targets": args.positional(
+            default = ["//..."],
+            maximum = 512,
+            description = "Bazel target patterns to test.",
+        ),
+    },
+)
