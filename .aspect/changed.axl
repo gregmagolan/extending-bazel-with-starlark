@@ -1,0 +1,49 @@
+"""`aspect changed` — the files you are touching right now, versus a base branch.
+
+Committed work is diffed from the merge base rather than the base branch tip, so
+commits that landed on the base after you branched are not reported as yours.
+Untracked files are listed too: before you commit, they are part of the answer.
+"""
+
+def _git(ctx, *args) -> str:
+    """Run `git <args>` in the workspace; return stdout, or fail with git's stderr."""
+    out = ctx.std.process.command("git").args(list(args)) \
+        .stdout("piped").stderr("piped").spawn().wait_with_output()
+    if out.status.code != 0:
+        fail("git %s failed (exit %d): %s" % (" ".join(args), out.status.code, out.stderr.strip()))
+    return out.stdout
+
+def _impl(ctx: TaskContext) -> int:
+    merge_base = _git(ctx, "merge-base", "HEAD", ctx.args.base).strip()
+
+    # `git diff <commit>` spans the index and the working tree, so staged and
+    # unstaged edits both land here; only never-added files need ls-files.
+    tracked = _git(ctx, "diff", "--name-only", merge_base)
+    untracked = _git(ctx, "ls-files", "--others", "--exclude-standard")
+    files = sorted([f for f in tracked.splitlines() + untracked.splitlines() if f])
+
+    # `print()` goes to stderr, so write paths to stdout: this output is meant
+    # to be piped.
+    if ctx.args.format == "json":
+        ctx.std.io.stdout.write(json.encode({"base": ctx.args.base, "files": files}, indent = 2) + "\n")
+    else:
+        for f in files:
+            ctx.std.io.stdout.write(f + "\n")
+    return 0
+
+changed = task(
+    summary = "List the files changed in the working tree, relative to a base branch.",
+    description = "List every file you have touched since branching off --base: committed, staged, unstaged and untracked. Paths are workspace-relative, one per line on stdout, so the output pipes (`aspect changed | xargs wc -l`). Use --format=json for a `{base, files}` document to parse with jq.",
+    implementation = _impl,
+    args = {
+        "base": args.string(
+            default = "main",
+            description = "Branch, tag or commit to compare against. The diff starts at its merge base with HEAD.",
+        ),
+        "format": args.string(
+            default = "human",
+            values = ["human", "json"],
+            description = "stdout format. `human`: one path per line. `json`: a single `{base, files}` document.",
+        ),
+    },
+)
