@@ -1,0 +1,62 @@
+"""`aspect policy` — architecture rules you can actually run.
+
+A layering rule is usually a paragraph in a README that nothing enforces. It is
+also a Bazel query: "which targets in this layer depend on that layer?" If the
+query returns anything, the rule is broken.
+
+Each rule here is one query. Adding a rule means adding a line to RULES.
+"""
+
+# (name, the layer being constrained, what it may not depend on)
+RULES = [
+    (
+        "foundation-libs-stay-leaf",
+        "//lib/clock/... + //lib/codec/... + //lib/schema/... + //lib/validate/...",
+        "//lib/log/... + //lib/metrics/...",
+    ),
+    (
+        "cron-stays-offline",
+        "//cmd/cron/...",
+        "//lib/store/... + //lib/queue/... + //lib/api/...",
+    ),
+    (
+        "domain-stays-transport-free",
+        "//internal/domain/...",
+        "//lib/api/... + //lib/queue/...",
+    ),
+]
+
+def _violations(ctx: TaskContext, targets: str, deny: str) -> list[str]:
+    """Targets in `targets` that depend on `deny`, directly or transitively.
+
+    `rdeps(//..., X)` is everything that depends on X. Intersecting with the
+    constrained layer leaves the offenders, and `except` drops the denied
+    targets themselves — they trivially depend on themselves.
+    """
+    query = "rdeps(//..., (%s)) intersect (%s) except (%s)" % (deny, targets, deny)
+    # Toolchain edges are not architecture decisions, so judge declared deps only.
+    return sorted([t.name for t in ctx.bazel.query(query)])
+
+def _impl(ctx: TaskContext) -> int:
+    failed = 0
+    for name, targets, deny in RULES:
+        offenders = _violations(ctx, targets, deny)
+        if not offenders:
+            continue
+        failed += 1
+        print("  VIOLATION  " + name)
+        for t in offenders:
+            print("    " + t)
+
+    if failed:
+        print("")
+        print("  " + str(failed) + " of " + str(len(RULES)) + " rules violated")
+        return 1
+
+    print("  " + str(len(RULES)) + " rules checked, no violations.")
+    return 0
+
+policy = task(
+    summary = "Check this repository's architecture rules.",
+    implementation = _impl,
+)
