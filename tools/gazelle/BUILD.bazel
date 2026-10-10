@@ -1,0 +1,18 @@
+load("@aspect_gazelle_prebuilt//:def.bzl", "aspect_gazelle")
+
+# The Gazelle binary `aspect gazelle` drives (its default --gazelle-target).
+# It is the prebuilt one because only that binary hosts Orion, the Starlark
+# interpreter that runs service_image.axl.
+#
+# repo_config is mandatory whenever "go" is in languages, to keep Gazelle's Go
+# resolver from doing a network lookup per unknown import. This module's go.mod
+# has no requirements, so there is nothing to resolve and None is the honest
+# answer; a repo with external Go deps passes
+# "@bazel_gazelle_go_repository_config//:WORKSPACE" instead.
+aspect_gazelle(
+    name = "gazelle",
+    extensions = ["service_image.axl"],
+    languages = ["go"],
+    repo_config = None,
+    visibility = ["//visibility:public"],
+)
