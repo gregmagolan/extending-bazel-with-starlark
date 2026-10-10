@@ -1,0 +1,23 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "validate",
+    srcs = ["validate.go"],
+    importpath = "github.com/gregmagolan/extending-bazel-with-starlark/lib/validate",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//lib/codec",
+        "//lib/schema",
+    ],
+)
+
+go_test(
+    name = "validate_test",
+    size = "small",
+    srcs = ["validate_test.go"],
+    embed = [":validate"],
+    deps = [
+        "//lib/codec",
+        "//lib/schema",
+    ],
+)

@@ -1,0 +1,28 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "invoice",
+    srcs = [
+        "links.go",
+        "model.go",
+        "validate.go",
+    ],
+    importpath = "github.com/gregmagolan/extending-bazel-with-starlark/internal/domain/invoice",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/domain/ledger",
+        "//internal/domain/order",
+        "//internal/domain/pricing",
+        "//lib/codec",
+        "//lib/schema",
+        "//lib/validate",
+    ],
+)
+
+go_test(
+    name = "invoice_test",
+    size = "small",
+    srcs = ["invoice_test.go"],
+    embed = [":invoice"],
+    deps = ["//lib/codec"],
+)

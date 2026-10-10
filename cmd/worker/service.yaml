@@ -1,0 +1,11 @@
+# Deployment description for the worker binary.
+#
+# Nothing reads this file yet. A later step in the course adds a Gazelle
+# extension that generates the OCI image and push targets from it.
+name: worker
+port: 8081
+replicas: 6
+healthcheck: /healthz
+resources:
+  cpu: "250m"
+  memory: 256Mi

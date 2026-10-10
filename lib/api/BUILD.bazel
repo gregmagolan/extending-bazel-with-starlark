@@ -1,0 +1,44 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "api",
+    srcs = [
+        "api.go",
+        "time.go",
+    ],
+    importpath = "github.com/gregmagolan/extending-bazel-with-starlark/lib/api",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//internal/domain/catalog",
+        "//internal/domain/feature",
+        "//internal/domain/invoice",
+        "//internal/domain/order",
+        "//internal/domain/report",
+        "//internal/domain/tenant",
+        "//internal/domain/user",
+        "//lib/auth",
+        "//lib/codec",
+        "//lib/config",
+        "//lib/log",
+        "//lib/metrics",
+        "//lib/ratelimit",
+        "//lib/schema",
+        "//lib/store",
+    ],
+)
+
+go_test(
+    name = "api_test",
+    size = "small",
+    srcs = ["api_test.go"],
+    embed = [":api"],
+    deps = [
+        "//lib/auth",
+        "//lib/codec",
+        "//lib/config",
+        "//lib/log",
+        "//lib/metrics",
+        "//lib/ratelimit",
+        "//lib/store",
+    ],
+)

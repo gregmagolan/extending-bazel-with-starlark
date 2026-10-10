@@ -1,0 +1,24 @@
+# Developer defaults for the course repo.
+#
+# Nothing in here is required for the build to be correct. It exists so that a
+# laptop produces repeatable numbers when the course walks through the timing
+# table, and so that `bazel clean` does not throw away work that is still valid.
+
+# Keep caches in the user's home instead of the output base, so a `bazel clean`
+# (or a new worktree) replays from cache instead of rebuilding from scratch.
+common --disk_cache=~/.cache/bazel/course-disk
+common --repository_cache=~/.cache/bazel/course-repo
+
+# Failure output that is actually useful in a classroom.
+build --verbose_failures
+test --test_output=errors
+
+# Deterministic action environment: without this, a changed $PATH or $TMPDIR
+# invalidates the whole cache between students' shells.
+build --incompatible_strict_action_env
+
+common --enable_platform_specific_config
+
+# Personal overrides (remote cache credentials, --jobs, ...) that are not
+# checked in.
+try-import %workspace%/.bazelrc.user

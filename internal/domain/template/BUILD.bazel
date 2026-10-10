@@ -1,0 +1,33 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "template",
+    srcs = [
+        "model.go",
+        "repo.go",
+        "validate.go",
+    ],
+    importpath = "github.com/gregmagolan/extending-bazel-with-starlark/internal/domain/template",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//lib/codec",
+        "//lib/log",
+        "//lib/metrics",
+        "//lib/schema",
+        "//lib/store",
+        "//lib/validate",
+    ],
+)
+
+go_test(
+    name = "template_test",
+    size = "small",
+    srcs = ["template_test.go"],
+    embed = [":template"],
+    deps = [
+        "//lib/codec",
+        "//lib/config",
+        "//lib/log",
+        "//lib/store",
+    ],
+)

@@ -1,0 +1,20 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "config",
+    srcs = ["config.go"],
+    importpath = "github.com/gregmagolan/extending-bazel-with-starlark/lib/config",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//lib/log",
+        "//lib/validate",
+    ],
+)
+
+go_test(
+    name = "config_test",
+    size = "small",
+    srcs = ["config_test.go"],
+    embed = [":config"],
+    deps = ["//lib/log"],
+)

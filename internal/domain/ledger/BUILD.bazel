@@ -1,0 +1,26 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "ledger",
+    srcs = [
+        "links.go",
+        "model.go",
+        "validate.go",
+    ],
+    importpath = "github.com/gregmagolan/extending-bazel-with-starlark/internal/domain/ledger",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/domain/pricing",
+        "//lib/codec",
+        "//lib/schema",
+        "//lib/validate",
+    ],
+)
+
+go_test(
+    name = "ledger_test",
+    size = "small",
+    srcs = ["ledger_test.go"],
+    embed = [":ledger"],
+    deps = ["//lib/codec"],
+)

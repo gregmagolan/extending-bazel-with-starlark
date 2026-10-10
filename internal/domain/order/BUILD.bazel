@@ -1,0 +1,27 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "order",
+    srcs = [
+        "links.go",
+        "model.go",
+        "validate.go",
+    ],
+    importpath = "github.com/gregmagolan/extending-bazel-with-starlark/internal/domain/order",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/domain/catalog",
+        "//internal/domain/user",
+        "//lib/codec",
+        "//lib/schema",
+        "//lib/validate",
+    ],
+)
+
+go_test(
+    name = "order_test",
+    size = "small",
+    srcs = ["order_test.go"],
+    embed = [":order"],
+    deps = ["//lib/codec"],
+)

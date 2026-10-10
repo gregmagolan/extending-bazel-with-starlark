@@ -1,0 +1,11 @@
+# Deployment description for the server binary.
+#
+# Nothing reads this file yet. A later step in the course adds a Gazelle
+# extension that generates the OCI image and push targets from it.
+name: server
+port: 8080
+replicas: 3
+healthcheck: /healthz
+resources:
+  cpu: "500m"
+  memory: 512Mi

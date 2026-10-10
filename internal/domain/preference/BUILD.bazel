@@ -1,0 +1,24 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "preference",
+    srcs = [
+        "model.go",
+        "validate.go",
+    ],
+    importpath = "github.com/gregmagolan/extending-bazel-with-starlark/internal/domain/preference",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//lib/codec",
+        "//lib/schema",
+        "//lib/validate",
+    ],
+)
+
+go_test(
+    name = "preference_test",
+    size = "small",
+    srcs = ["preference_test.go"],
+    embed = [":preference"],
+    deps = ["//lib/codec"],
+)

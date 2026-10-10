@@ -1,0 +1,24 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "pricing",
+    srcs = [
+        "model.go",
+        "validate.go",
+    ],
+    importpath = "github.com/gregmagolan/extending-bazel-with-starlark/internal/domain/pricing",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//lib/codec",
+        "//lib/schema",
+        "//lib/validate",
+    ],
+)
+
+go_test(
+    name = "pricing_test",
+    size = "small",
+    srcs = ["pricing_test.go"],
+    embed = [":pricing"],
+    deps = ["//lib/codec"],
+)

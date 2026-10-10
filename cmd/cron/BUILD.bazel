@@ -1,0 +1,26 @@
+load("@rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
+
+go_library(
+    name = "cron_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/gregmagolan/extending-bazel-with-starlark/cmd/cron",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//lib/clock",
+        "//lib/config",
+        "//lib/log",
+    ],
+)
+
+go_binary(
+    name = "cron",
+    embed = [":cron_lib"],
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "cron_test",
+    size = "small",
+    srcs = ["main_test.go"],
+    embed = [":cron_lib"],
+)
