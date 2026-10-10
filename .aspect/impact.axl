@@ -1,0 +1,85 @@
+"""`aspect impact` — the tests that depend on what you changed.
+
+`aspect changed` answers "what did I touch?" in filenames. Bazel does not think
+in filenames, it thinks in targets, so this task does the translation: each
+changed file belongs to a Bazel package, and Bazel can say which tests depend
+on those packages.
+"""
+
+_BUILD_FILES = ["BUILD.bazel", "BUILD"]
+
+def _git(ctx, *args) -> str:
+    """Run `git <args>` in the workspace; return stdout, or fail with git's stderr."""
+    out = ctx.std.process.command("git").args(list(args)) \
+        .stdout("piped").stderr("piped").spawn().wait_with_output()
+    if out.status.code != 0:
+        fail("git %s failed (exit %d): %s" % (" ".join(args), out.status.code, out.stderr.strip()))
+    return out.stdout
+
+def _package_of(ctx: TaskContext, file: str) -> str | None:
+    """The Bazel package a file belongs to: the nearest directory at or above it
+    holding a BUILD file. `lib/log/log.go` is in `lib/log`.
+
+    Starlark has no `while` loop, so walking *up* a path is a countdown over its
+    directories rather than a loop that strips one off at a time.
+    """
+    root = ctx.std.env.bazel_root_dir().rstrip("/")
+    dirs = file.split("/")[:-1]              # lib/log/log.go -> ["lib", "log"]
+    for depth in range(len(dirs), -1, -1):
+        pkg = "/".join(dirs[:depth])         # "lib/log", then "lib", then ""
+        directory = root + "/" + pkg if pkg else root
+        for name in _BUILD_FILES:
+            if ctx.std.fs.exists(directory + "/" + name):
+                return pkg
+    return None
+
+def _impl(ctx: TaskContext) -> int:
+    merge_base = _git(ctx, "merge-base", "HEAD", ctx.args.base).strip()
+    # Both calls, like `aspect changed`: `diff` covers committed, staged and
+    # unstaged work, and `ls-files --others` covers files git has never seen.
+    # A brand-new source file is the most common thing to ask about.
+    tracked = _git(ctx, "diff", "--name-only", merge_base).splitlines()
+    untracked = _git(ctx, "ls-files", "--others", "--exclude-standard").splitlines()
+    files = [f for f in tracked + untracked if f]
+
+    # Several files usually share one package, so collect them into a set.
+    packages = sorted({p: None for p in [_package_of(ctx, f) for f in files] if p != None})
+    if not packages:
+        print("  nothing changed under a Bazel package")
+        return 0
+
+    for pkg in packages:
+        print("  changed: //" + pkg)
+
+    # `rdeps(//..., X)` is "everything in the repo that depends on X", and
+    # `tests(...)` narrows that to test targets.
+    pattern = " + ".join(["//" + pkg + ":all" for pkg in packages])
+    tests = sorted({t.name: None for t in ctx.bazel.query("tests(rdeps(//..., %s))" % pattern)})
+
+    if ctx.args.format == "json":
+        # stdout, so the document pipes; `print()` writes to stderr.
+        ctx.std.io.stdout.write(json.encode({"tests": tests}, indent = 2) + "\n")
+        return 0
+
+    print("")
+    for t in tests:
+        print("  " + t)
+    print("")
+    print("  " + str(len(tests)) + " affected tests")
+    return 0
+
+impact = task(
+    summary = "List the tests affected by your changes.",
+    implementation = _impl,
+    args = {
+        "base": args.string(
+            default = "main",
+            description = "Branch, tag or commit to compare against.",
+        ),
+        "format": args.string(
+            default = "human",
+            values = ["human", "json"],
+            description = "stdout format. `json` writes a `{tests}` document.",
+        ),
+    },
+)
