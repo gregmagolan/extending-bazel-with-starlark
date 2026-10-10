@@ -1,0 +1,29 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "store",
+    srcs = ["store.go"],
+    importpath = "github.com/gregmagolan/extending-bazel-with-starlark/lib/store",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//lib/codec",
+        "//lib/config",
+        "//lib/log",
+        "//lib/metrics",
+        "//lib/schema",
+        "//lib/validate",
+    ],
+)
+
+go_test(
+    name = "store_test",
+    size = "small",
+    srcs = ["store_test.go"],
+    embed = [":store"],
+    deps = [
+        "//lib/codec",
+        "//lib/config",
+        "//lib/log",
+        "//lib/schema",
+    ],
+)

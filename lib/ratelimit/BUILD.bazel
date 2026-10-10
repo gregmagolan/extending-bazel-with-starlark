@@ -1,0 +1,21 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "ratelimit",
+    srcs = ["ratelimit.go"],
+    importpath = "github.com/gregmagolan/extending-bazel-with-starlark/lib/ratelimit",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//lib/clock",
+        "//lib/log",
+        "//lib/metrics",
+    ],
+)
+
+go_test(
+    name = "ratelimit_test",
+    size = "small",
+    srcs = ["ratelimit_test.go"],
+    embed = [":ratelimit"],
+    deps = ["//lib/log"],
+)

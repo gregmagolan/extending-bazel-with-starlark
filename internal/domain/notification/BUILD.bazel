@@ -1,0 +1,36 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "notification",
+    srcs = [
+        "links.go",
+        "model.go",
+        "repo.go",
+        "validate.go",
+    ],
+    importpath = "github.com/gregmagolan/extending-bazel-with-starlark/internal/domain/notification",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/domain/digest",
+        "//internal/domain/template",
+        "//lib/codec",
+        "//lib/log",
+        "//lib/metrics",
+        "//lib/schema",
+        "//lib/store",
+        "//lib/validate",
+    ],
+)
+
+go_test(
+    name = "notification_test",
+    size = "small",
+    srcs = ["notification_test.go"],
+    embed = [":notification"],
+    deps = [
+        "//lib/codec",
+        "//lib/config",
+        "//lib/log",
+        "//lib/store",
+    ],
+)

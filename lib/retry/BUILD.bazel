@@ -1,0 +1,20 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "retry",
+    srcs = ["retry.go"],
+    importpath = "github.com/gregmagolan/extending-bazel-with-starlark/lib/retry",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//lib/clock",
+        "//lib/log",
+    ],
+)
+
+go_test(
+    name = "retry_test",
+    size = "small",
+    srcs = ["retry_test.go"],
+    embed = [":retry"],
+    deps = ["//lib/log"],
+)

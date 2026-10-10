@@ -1,0 +1,27 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "catalog",
+    srcs = [
+        "links.go",
+        "model.go",
+        "validate.go",
+    ],
+    importpath = "github.com/gregmagolan/extending-bazel-with-starlark/internal/domain/catalog",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/domain/pricing",
+        "//internal/domain/taxonomy",
+        "//lib/codec",
+        "//lib/schema",
+        "//lib/validate",
+    ],
+)
+
+go_test(
+    name = "catalog_test",
+    size = "small",
+    srcs = ["catalog_test.go"],
+    embed = [":catalog"],
+    deps = ["//lib/codec"],
+)

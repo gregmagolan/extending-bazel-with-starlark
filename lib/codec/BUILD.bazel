@@ -1,0 +1,15 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "codec",
+    srcs = ["codec.go"],
+    importpath = "github.com/gregmagolan/extending-bazel-with-starlark/lib/codec",
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "codec_test",
+    size = "small",
+    srcs = ["codec_test.go"],
+    embed = [":codec"],
+)

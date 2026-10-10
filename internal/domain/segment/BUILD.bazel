@@ -1,0 +1,24 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "segment",
+    srcs = [
+        "model.go",
+        "validate.go",
+    ],
+    importpath = "github.com/gregmagolan/extending-bazel-with-starlark/internal/domain/segment",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//lib/codec",
+        "//lib/schema",
+        "//lib/validate",
+    ],
+)
+
+go_test(
+    name = "segment_test",
+    size = "small",
+    srcs = ["segment_test.go"],
+    embed = [":segment"],
+    deps = ["//lib/codec"],
+)

@@ -1,0 +1,27 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "tenant",
+    srcs = [
+        "links.go",
+        "model.go",
+        "validate.go",
+    ],
+    importpath = "github.com/gregmagolan/extending-bazel-with-starlark/internal/domain/tenant",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/domain/locale",
+        "//internal/domain/quota",
+        "//lib/codec",
+        "//lib/schema",
+        "//lib/validate",
+    ],
+)
+
+go_test(
+    name = "tenant_test",
+    size = "small",
+    srcs = ["tenant_test.go"],
+    embed = [":tenant"],
+    deps = ["//lib/codec"],
+)

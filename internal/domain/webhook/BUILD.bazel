@@ -1,0 +1,35 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "webhook",
+    srcs = [
+        "links.go",
+        "model.go",
+        "repo.go",
+        "validate.go",
+    ],
+    importpath = "github.com/gregmagolan/extending-bazel-with-starlark/internal/domain/webhook",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/domain/delivery",
+        "//lib/codec",
+        "//lib/log",
+        "//lib/metrics",
+        "//lib/schema",
+        "//lib/store",
+        "//lib/validate",
+    ],
+)
+
+go_test(
+    name = "webhook_test",
+    size = "small",
+    srcs = ["webhook_test.go"],
+    embed = [":webhook"],
+    deps = [
+        "//lib/codec",
+        "//lib/config",
+        "//lib/log",
+        "//lib/store",
+    ],
+)

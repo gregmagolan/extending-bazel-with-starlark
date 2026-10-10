@@ -1,0 +1,36 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "billing",
+    srcs = [
+        "links.go",
+        "model.go",
+        "repo.go",
+        "validate.go",
+    ],
+    importpath = "github.com/gregmagolan/extending-bazel-with-starlark/internal/domain/billing",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/domain/dunning",
+        "//internal/domain/usage",
+        "//lib/codec",
+        "//lib/log",
+        "//lib/metrics",
+        "//lib/schema",
+        "//lib/store",
+        "//lib/validate",
+    ],
+)
+
+go_test(
+    name = "billing_test",
+    size = "small",
+    srcs = ["billing_test.go"],
+    embed = [":billing"],
+    deps = [
+        "//lib/codec",
+        "//lib/config",
+        "//lib/log",
+        "//lib/store",
+    ],
+)

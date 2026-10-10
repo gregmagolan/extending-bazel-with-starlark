@@ -1,0 +1,29 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "report",
+    srcs = [
+        "links.go",
+        "model.go",
+        "validate.go",
+    ],
+    importpath = "github.com/gregmagolan/extending-bazel-with-starlark/internal/domain/report",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/domain/forecast",
+        "//internal/domain/geo",
+        "//internal/domain/ledger",
+        "//internal/domain/locale",
+        "//lib/codec",
+        "//lib/schema",
+        "//lib/validate",
+    ],
+)
+
+go_test(
+    name = "report_test",
+    size = "small",
+    srcs = ["report_test.go"],
+    embed = [":report"],
+    deps = ["//lib/codec"],
+)

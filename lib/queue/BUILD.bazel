@@ -1,0 +1,30 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "queue",
+    srcs = ["queue.go"],
+    importpath = "github.com/gregmagolan/extending-bazel-with-starlark/lib/queue",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//lib/clock",
+        "//lib/codec",
+        "//lib/log",
+        "//lib/metrics",
+        "//lib/retry",
+        "//lib/store",
+    ],
+)
+
+go_test(
+    name = "queue_test",
+    size = "small",
+    srcs = ["queue_test.go"],
+    embed = [":queue"],
+    deps = [
+        "//lib/codec",
+        "//lib/config",
+        "//lib/log",
+        "//lib/retry",
+        "//lib/store",
+    ],
+)

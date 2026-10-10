@@ -1,0 +1,24 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "taxonomy",
+    srcs = [
+        "model.go",
+        "validate.go",
+    ],
+    importpath = "github.com/gregmagolan/extending-bazel-with-starlark/internal/domain/taxonomy",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//lib/codec",
+        "//lib/schema",
+        "//lib/validate",
+    ],
+)
+
+go_test(
+    name = "taxonomy_test",
+    size = "small",
+    srcs = ["taxonomy_test.go"],
+    embed = [":taxonomy"],
+    deps = ["//lib/codec"],
+)

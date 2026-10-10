@@ -1,0 +1,17 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "schema",
+    srcs = ["schema.go"],
+    importpath = "github.com/gregmagolan/extending-bazel-with-starlark/lib/schema",
+    visibility = ["//visibility:public"],
+    deps = ["//lib/codec"],
+)
+
+go_test(
+    name = "schema_test",
+    size = "small",
+    srcs = ["schema_test.go"],
+    embed = [":schema"],
+    deps = ["//lib/codec"],
+)

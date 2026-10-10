@@ -1,0 +1,11 @@
+# Deployment description for the cron binary.
+#
+# Nothing reads this file yet. A later step in the course adds a Gazelle
+# extension that generates the OCI image and push targets from it.
+name: cron
+port: 8082
+replicas: 1
+schedule: "*/5 * * * *"
+resources:
+  cpu: "100m"
+  memory: 128Mi

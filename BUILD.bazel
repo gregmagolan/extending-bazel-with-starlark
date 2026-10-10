@@ -1,0 +1,9 @@
+load("@gazelle//:def.bzl", "gazelle")
+
+# gazelle:prefix github.com/gregmagolan/extending-bazel-with-starlark
+gazelle(name = "gazelle")
+
+gazelle(
+    name = "gazelle_update",
+    command = "fix",
+)

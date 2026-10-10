@@ -1,0 +1,24 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "auth",
+    srcs = ["auth.go"],
+    importpath = "github.com/gregmagolan/extending-bazel-with-starlark/lib/auth",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//lib/codec",
+        "//lib/config",
+        "//lib/log",
+    ],
+)
+
+go_test(
+    name = "auth_test",
+    size = "small",
+    srcs = ["auth_test.go"],
+    embed = [":auth"],
+    deps = [
+        "//lib/config",
+        "//lib/log",
+    ],
+)

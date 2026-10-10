@@ -1,0 +1,27 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "feature",
+    srcs = [
+        "links.go",
+        "model.go",
+        "validate.go",
+    ],
+    importpath = "github.com/gregmagolan/extending-bazel-with-starlark/internal/domain/feature",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/domain/rollout",
+        "//internal/domain/segment",
+        "//lib/codec",
+        "//lib/schema",
+        "//lib/validate",
+    ],
+)
+
+go_test(
+    name = "feature_test",
+    size = "small",
+    srcs = ["feature_test.go"],
+    embed = [":feature"],
+    deps = ["//lib/codec"],
+)
