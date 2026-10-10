@@ -1,0 +1,27 @@
+"""Add behaviour to commands you did not write.
+
+`config.axl` applies to every task in this repository, including the built-in
+`aspect test`. Here it asks Bazel to retry a failing test, and watches the same
+`test_summary` events `aspect observe` reads to report any that only passed on
+a retry.
+"""
+
+load("@aspect//traits.axl", "BazelTrait")
+
+def config(ctx: ConfigContext):
+    # Without a retry, a flake is indistinguishable from a failure: Bazel runs
+    # the test once, it fails, and that is all anyone sees.
+    ctx.traits[BazelTrait].extra_flags = ["--flaky_test_attempts=3"]
+
+    flaky = []
+
+    def _watch(ctx, event):
+        if event.kind == "test_summary" and event.payload.overall_status == "flaky":
+            flaky.append(event.id.label)
+
+    def _report(ctx, conclusion):
+        if flaky:
+            ctx.std.io.stderr.write("\n  ⚠  FLAKE CAUGHT: " + ", ".join(flaky) + "\n")
+
+    ctx.traits[BazelTrait].build_event.append(_watch)
+    ctx.hooks.post_task(_report)
