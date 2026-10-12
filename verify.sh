@@ -74,7 +74,7 @@ step() {
 # A missing step branch would otherwise read as a page quoting a stale number,
 # which is the opposite of what it means.
 missing=()
-for b in main step-0 step-1 step-2 step-3 step-4 step-5 step-6 step-7 step-8; do
+for b in main step-1 step-2 step-3 step-4 step-5 step-6 step-7; do
   git rev-parse --verify --quiet "$b^{commit}" >/dev/null || missing+=("$b")
 done
 if (( ${#missing[@]} )); then
@@ -93,34 +93,33 @@ fi
 echo
 echo "== Structure: what the index page claims"
 
-# "changed.axl is 49 lines, impact.axl 85, policy.axl 62, observe.axl 56",
+# "changed.axl is 49 lines, policy.axl 62, observe.axl 56",
 # config.axl 27, and "the Gazelle extension ... is the longest at 128".
 while read -r branch path want; do
   got=$(git show "$branch:$path" | wc -l | tr -d ' ')
   ok "$path on $branch is $want lines" "$want" "$got"
 done <<'EOF'
 step-2 .aspect/changed.axl 49
-step-3 .aspect/impact.axl 85
-step-4 .aspect/policy.axl 62
-step-5 .aspect/observe.axl 56
-step-6 .aspect/config.axl 27
-step-7 tools/gazelle/service_image.axl 128
+step-3 .aspect/policy.axl 62
+step-4 .aspect/observe.axl 56
+step-5 .aspect/config.axl 27
+step-6 tools/gazelle/service_image.axl 128
 EOF
 
 # "Every step's diff is one file, with three exceptions: the step that drops a
 # whole Go monorepo in, the Gazelle step, and the policy step."
-for n in 1 2 3 4 5 6 7; do
+for n in 1 2 3 4 5 6; do
   m=$((n + 1))
   count=$(git diff --name-only "step-$n" "step-$m" | wc -l | tr -d ' ')
   case "$n" in
-    3) want=2 ;;  # policy.axl + the patch its exercise applies
-    6) want=11 ;; # the Gazelle step generates BUILD files as its output
+    2) want=2 ;;  # policy.axl + the patch its exercise applies
+    5) want=11 ;; # the Gazelle step generates BUILD files as its output
     *) want=1 ;;
   esac
   ok "step-$n → step-$m diff is $want file(s)" "$want" "$count"
 done
 
-ok "main is step-8" "$(git rev-parse step-8)" "$(git rev-parse main)"
+ok "main is step-7" "$(git rev-parse step-7)" "$(git rev-parse main)"
 
 if [[ $QUICK == 1 ]]; then
   echo
@@ -130,16 +129,13 @@ if [[ $QUICK == 1 ]]; then
 fi
 
 echo
-echo "== step-0: a project with one file"
-d=$(step step-0); cd "$d"
-# The pages no longer print this number here, but the last step's "37
-# commands: 33 shipped, 4 yours" is arithmetic on it, so it is still the
-# baseline that claim rests on.
-ok "the CLI ships 33 commands" "33" "$(aspect describe 2>/dev/null | jq '.commands | length')"
-
-echo
-echo "== step-1: the repository that arrives"
+echo "== step-1: setting up the course repository"
 d=$(step step-1); cd "$d"
+# The pages no longer print this number, but the last step's "37 commands: 33
+# shipped, 4 yours" is arithmetic on it, so it is still the baseline that
+# claim rests on.
+ok "the CLI ships 33 commands" "33" "$(aspect describe 2>/dev/null | jq '.commands | length')"
+ok "the repository pins the CLI" "2026.41.50" "$(aspect version 2>/dev/null)"
 ok "55 go_library targets" "55" "$(bazel query 'kind(go_library, //...)' 2>/dev/null | wc -l | tr -d ' ')"
 ok "55 go_test targets"    "55" "$(bazel query 'kind(go_test, //...)' 2>/dev/null | wc -l | tr -d ' ')"
 ok "3 binaries"             "3" "$(bazel query 'kind(go_binary, //cmd/...)' 2>/dev/null | wc -l | tr -d ' ')"
@@ -156,25 +152,14 @@ aspect changed --format=json 2>/dev/null | jq -e . >/dev/null
 ok "--format=json is valid JSON on stdout alone" "0" "$?"
 aspect changed --format=bogus >/dev/null 2>&1
 ok "--format=bogus exits 2, before any Starlark runs" "2" "$?"
-ok "--base=HEAD~2 reports 256 files" "256" "$(aspect changed --base=HEAD~2 2>/dev/null | wc -l | tr -d ' ')"
+ok "--base=HEAD~1 reaches back to the setup commit" \
+  ".aspect/changed.axl lib/log/log.go" \
+  "$(aspect changed --base=HEAD~1 2>/dev/null | sort | tr '\n' ' ' | sed 's/ $//')"
 ok "describe names both args" "base format" "$(aspect describe changed 2>/dev/null | jq -r '[.args[].name] | join(" ")')"
 
 echo
-echo "== step-3: what does my tree affect"
+echo "== step-3: a rule you can enforce"
 d=$(step step-3); cd "$d"
-printf '\n// a change\n' >> lib/log/log.go
-contains "a change to lib/log affects 33 tests" "33 affected tests" "$(aspect impact 2>&1)"
-git checkout -- lib/log/log.go
-printf '\n// a change\n' >> internal/domain/geo/model.go
-contains "a change to internal/domain/geo affects 4" "4 affected tests" "$(aspect impact 2>&1)"
-git checkout -- internal/domain/geo/model.go
-echo 'package geo' > internal/domain/geo/newfile.go
-contains "an untracked file is seen, and over-reports its package" "4 affected tests" "$(aspect impact 2>&1)"
-rm -f internal/domain/geo/newfile.go
-
-echo
-echo "== step-4: a rule you can enforce"
-d=$(step step-4); cd "$d"
 out=$(aspect policy 2>&1); rc=$?
 contains "a clean repository passes 3 rules" "3 rules checked, no violations" "$out"
 ok "and exits 0" "0" "$rc"
@@ -186,24 +171,24 @@ contains "and both offending targets" "//lib/validate:validate_test" "$out"
 git checkout -- .
 
 echo
-echo "== step-5: watch Bazel work"
-d=$(step step-5); cd "$d"
+echo "== step-4: watch Bazel work"
+d=$(step step-4); cd "$d"
 out=$(aspect observe //lib/queue:queue_test //lib/log:log_test //lib/retry:retry_test 2>&1)
 ok "three targets give three result lines" "3" "$(grep -c 'PASSED\|FAILED\|FLAKY' <<<"$out")"
 contains "and the output comes after the build, not during" "queue_test" "$out"
 
 echo
-echo "== step-6: you won't ship that"
-d=$(step step-6); cd "$d"
+echo "== step-5: you won't ship that"
+d=$(step step-5); cd "$d"
 out=$(aspect test //lib/log:log_test --announce-bazel-command=true 2>&1)
 contains "config.axl puts --flaky_test_attempts=3 on the Bazel command" "--flaky_test_attempts=3" "$out"
 out=$(aspect test //lib/log:log_test 2>&1)
 contains "a passing test is not flagged" "Passed test task" "$out"
 
 echo
-echo "== step-7: generate it"
-d=$(step step-7); cd "$d"
-git restore --source=step-6 -- cmd/*/BUILD.bazel
+echo "== step-6: generate it"
+d=$(step step-6); cd "$d"
+git restore --source=step-5 -- cmd/*/BUILD.bazel
 contains "gazelle regenerates 3 BUILD files" "Updated 3 BUILD files" "$(aspect gazelle 2>&1)"
 ok "byte-identical to what the step committed" "" "$(git diff --name-only -- cmd/)"
 contains "and is idempotent" "up to date" "$(aspect gazelle 2>&1)"
@@ -213,10 +198,10 @@ contains "MergeableAttrs moves exposed_ports when port: changes" '9090/tcp' "$(c
 git checkout -- .
 
 echo
-echo "== step-8: hand it to an agent"
-d=$(step step-8); cd "$d"
-ok "aspect describe lists 37 commands: 33 shipped, 4 yours" "37" "$(aspect describe 2>/dev/null | jq '.commands | length')"
-ok "and impact's own flags are in there" "base format" "$(aspect describe impact 2>/dev/null | jq -r '[.args[].name] | join(" ")')"
+echo "== step-7: hand it to an agent"
+d=$(step step-7); cd "$d"
+ok "aspect describe lists 36 commands: 33 shipped, 3 yours" "36" "$(aspect describe 2>/dev/null | jq '.commands | length')"
+ok "and changed's own flags are in there" "base format" "$(aspect describe changed 2>/dev/null | jq -r '[.args[].name] | join(" ")')"
 
 echo
 echo "$PASS passed, $FAIL failed"
