@@ -26,13 +26,16 @@ git checkout course-verify
 ```
 
 It checks each step out into a throwaway worktree under `.verify-wt/` and
-removes them on exit, so it never touches your working tree. Expect `main` and
-every `step-*` branch to exist locally; a fresh clone has only `main`:
+removes them on exit, so it never touches your working tree.
+
+It needs a local branch per step, and a fresh clone has only the one you are
+standing on. It says so and exits 2 if they are missing:
 
 ```shell
 for b in $(git branch -r --format='%(refname:lstrip=3)' | grep '^step-'); do
   git branch --force "$b" "origin/$b"
 done
+git branch --force main origin/main
 ```
 
 ## What it does not check

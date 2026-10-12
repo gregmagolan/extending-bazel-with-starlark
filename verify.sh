@@ -71,6 +71,25 @@ step() {
   echo "$dir"
 }
 
+# A missing step branch would otherwise read as a page quoting a stale number,
+# which is the opposite of what it means.
+missing=()
+for b in main step-0 step-1 step-2 step-3 step-4 step-5 step-6 step-7 step-8; do
+  git rev-parse --verify --quiet "$b^{commit}" >/dev/null || missing+=("$b")
+done
+if (( ${#missing[@]} )); then
+  cat >&2 <<MSG
+This needs a local branch per step, and a fresh clone has only the one you are
+standing on. Missing: ${missing[*]}
+
+  for b in \$(git branch -r --format='%(refname:lstrip=3)' | grep '^step-'); do
+    git branch --force "\$b" "origin/\$b"
+  done
+  git branch --force main origin/main
+MSG
+  exit 2
+fi
+
 echo
 echo "== Structure: what the index page claims"
 
