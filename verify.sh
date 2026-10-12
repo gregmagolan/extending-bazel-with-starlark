@@ -132,7 +132,10 @@ fi
 echo
 echo "== step-0: a project with one file"
 d=$(step step-0); cd "$d"
-ok "aspect describe lists 33 commands" "33" "$(aspect describe 2>/dev/null | jq '.commands | length')"
+# The pages no longer print this number here, but the last step's "37
+# commands: 33 shipped, 4 yours" is arithmetic on it, so it is still the
+# baseline that claim rests on.
+ok "the CLI ships 33 commands" "33" "$(aspect describe 2>/dev/null | jq '.commands | length')"
 
 echo
 echo "== step-1: the repository that arrives"
